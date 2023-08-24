@@ -32,7 +32,7 @@ enum Commands {
         /// format: user@hostname:port
         value: String,
     },
-    /// rename a host
+    /// Rename a host
     Rename {
         name: String,
         new_name: String,

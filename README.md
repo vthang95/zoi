@@ -23,6 +23,21 @@ cp target/release/zoi ~/.cargo/bin
 
 ```bash
 zoi -h
+
+Usage: zoi [COMMAND]
+
+Commands:
+  list        List all hosts
+  add         Add a host
+  delete      Delete a host
+  delete-all  Delete all hosts
+  edit        Edit a host
+  rename      Rename a host
+  help        Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 ## License
