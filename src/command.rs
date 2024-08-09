@@ -62,46 +62,46 @@ pub fn add_command(name: &String, host: &String) {
 
     let mut new_host = parser::HostItem::new();
     new_host.name = name.clone();
-    extract_host_name(&mut new_host, host.to_owned());
-    let mut config = parser::parse(path.clone());
+    extract_host_name(&mut new_host, host.to_string());
+    let mut config = parser::parse(&path);
     config.hosts.push(new_host);
-    config.write(path).unwrap();
+    config.write(&path).unwrap();
 }
 
 pub fn edit_command(name: &String, host: &String) {
     let path = get_path();
-    let mut config = parser::parse(path.to_owned());
+    let mut config = parser::parse(&path);
     let mut host_item = parser::HostItem::new();
 
-    extract_host_name(&mut host_item, host.to_owned());
+    extract_host_name(&mut host_item, host.to_string());
 
-    match config.edit(name.to_owned(), host_item) {
-        Ok(_) => config.write(path).unwrap(),
+    match config.edit(name, &host_item) {
+        Ok(_) => config.write(&path).unwrap(),
         Err(err) => eprintln!("Can not edit: {}", err)
     }
 }
 
 pub fn rename_command(name: &String, host: &String) {
     let path = get_path();
-    let mut config = parser::parse(path.clone());
-    match config.rename(name.to_owned(), host.to_owned()) {
-        Ok(_) => config.write(path).unwrap(),
+    let mut config = parser::parse(&path);
+    match config.rename(name, host) {
+        Ok(_) => config.write(&path).unwrap(),
         Err(err) => eprintln!("Can not rename: {}", err)
     }
 }
 
 pub fn delete_command(name: &String) {
     let path = get_path();
-    let mut config = parser::parse(path.clone());
-    match config.delete(name.to_owned()) {
-        Ok(_) => config.write(path).unwrap(),
+    let mut config = parser::parse(&path);
+    match config.delete(name) {
+        Ok(_) => config.write(&path).unwrap(),
         Err(err) => eprintln!("Can not delete: {}", err)
     }
 }
 
 pub fn list_command() {
     let path = get_path();
-    let config = parser::parse(path);
+    let config = parser::parse(&path);
 
     if config.hosts.len() == 0 {
         println!("No records");

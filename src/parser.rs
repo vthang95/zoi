@@ -1,4 +1,5 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, self, BufRead, Write}};
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufRead, BufReader, Write};
 use colored::*;
 
 #[derive(Clone)]
@@ -10,48 +11,35 @@ pub struct HostItem {
 }
 
 impl HostItem {
-    fn reset(&mut self) {
-        self.name = String::from("");
-        self.host = String::from("");
-        self.user = String::from("");
-        self.port = String::from("");
-    }
-
     fn is_valid(&self) -> bool {
-        self.port != "" && self.name != "" && self.host != "" && self.user != ""
+        !self.name.is_empty() && !self.host.is_empty() && !self.user.is_empty() && !self.port.is_empty()
     }
 
     pub fn new() -> Self {
         Self {
-            name: String::from(""),
-            host: String::from(""),
-            user: String::from(""),
-            port: String::from(""),
+            name: String::new(),
+            host: String::new(),
+            user: String::new(),
+            port: String::new(),
         }
     }
 }
 
 pub struct Config {
-    pub hosts: Vec<HostItem>
+    pub hosts: Vec<HostItem>,
 }
 
 impl Config {
     pub fn new() -> Self {
-        Config{
-            hosts: Vec::new()
+        Config {
+            hosts: Vec::new(),
         }
     }
 
-    pub fn log(self) {
-        let mut max_name_len = 0;
+    pub fn log(&self) {
+        let max_name_len = self.hosts.iter().map(|host| host.name.len()).max().unwrap_or(0);
 
-        for host in &self.hosts {
-            if host.name.len() > max_name_len {
-                max_name_len = host.name.len();
-            }
-        }
-
-        println!("");
+        println!();
         for host in &self.hosts {
             let spaces = " ".repeat(max_name_len - host.name.len());
             let leading_whitespaces = " ".repeat(5);
@@ -62,106 +50,101 @@ impl Config {
                 host.user.bold(),
                 host.host.bold().yellow(),
                 host.port
-            )
+            );
         }
     }
 
-    pub fn get_host_copy(self, name: String) -> Option<HostItem> {
-        for host in self.hosts {
-            if host.name == name {
-                return Some(host.clone());
-            }
-        }
-        None
+    pub fn get_host_copy(&self, name: &str) -> Option<HostItem> {
+        self.hosts.iter().find(|host| host.name == name).cloned()
     }
 
-    pub fn rename(&mut self, name: String, new_name: String) -> Result<(), &'static str> {
-        if let Some(index) = self.hosts.iter().position(|x| *x.name == name) {
-            self.hosts[index].name = new_name;
-            return Ok(())
+    pub fn rename(&mut self, name: &str, new_name: &str) -> Result<(), &'static str> {
+        if let Some(host) = self.hosts.iter_mut().find(|x| x.name == name) {
+            host.name = new_name.to_string();
+            Ok(())
         } else {
-            return Err("No host found!")
+            Err("No host found!")
         }
     }
 
-    pub fn edit(&mut self, name: String, host_item: HostItem) -> Result<(), &'static str> {
-        if let Some(index) = self.hosts.iter().position(|x| *x.name == name) {
-            self.hosts[index].host = host_item.host;
-            self.hosts[index].user = host_item.user;
-            self.hosts[index].port = host_item.port;
-            return Ok(())
+    pub fn edit(&mut self, name: &str, host_item: &HostItem) -> Result<(), &'static str> {
+        if let Some(host) = self.hosts.iter_mut().find(|x| x.name == name) {
+            host.host = host_item.host.clone();
+            host.user = host_item.user.clone();
+            host.port = host_item.port.clone();
+            Ok(())
         } else {
-            return Err("No host found!")
+            Err("No host found!")
         }
     }
 
-    pub fn delete(&mut self, name: String) -> Result<(), &'static str> {
-        if let Some(index) = self.hosts.iter().position(|x| *x.name == name) {
-            self.hosts.remove(index);
-            return Ok(())
+    pub fn delete(&mut self, name: &str) -> Result<(), &'static str> {
+        if let Some(pos) = self.hosts.iter().position(|x| x.name == name) {
+            self.hosts.remove(pos);
+            Ok(())
         } else {
-            return Err("No host found!")
+            Err("No host found!")
         }
     }
 
-    pub fn write(self, path: String) -> std::io::Result<()> {
-        let mut file = File::create(path.clone())?;
-        write!(file, "")?;
+    pub fn write(&self, path: &str) -> io::Result<()> {
+        let mut file = File::create(path)?;
+        file.write_all(b"")?; // Create the file with empty content
 
         let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(path)
-        .unwrap();
+            .write(true)
+            .append(true)
+            .open(path)?;
 
-        for host in self.hosts {
-            let new_config = format!("Host {0}
-                hostname {1}
-                user {2}
-                port {3}\n", host.name, host.host, host.user, host.port);
+        for host in &self.hosts {
+            let new_config = format!(
+                "Host {}\nhostname {}\nuser {}\nport {}\n",
+                host.name,
+                host.host,
+                host.user,
+                host.port
+            );
 
-            file.write(new_config.as_bytes()).expect("Write failed");
+            file.write_all(new_config.as_bytes())?;
         }
         Ok(())
     }
 }
 
-fn read_lines(filename: String) -> io::Lines<BufReader<File>> {
-    let file = File::open(filename).unwrap();
-
-    return io::BufReader::new(file).lines()
+fn read_lines(filename: &str) -> io::Lines<BufReader<File>> {
+    let file = File::open(filename).expect("Failed to open file");
+    BufReader::new(file).lines()
 }
 
-pub fn parse(filename: String) -> Config {
+pub fn parse(filename: &str) -> Config {
     let lines = read_lines(filename);
 
     let mut config = Config::new();
-
     let mut current_host = HostItem::new();
-    for line in lines {
-        let val = line.unwrap();
-        let list: Vec<String> = val
-            .trim()
-            .split(" ")
-            .map(|s| s.to_string())
-            .collect();
 
-        if list.len() == 2 && list[0] == "Host" {
-            current_host.name = String::from(&list[1]);
+    for line in lines {
+        let val = line.expect("Failed to read line");
+        let list: Vec<&str> = val.trim().split_whitespace().collect();
+
+        if list.len() == 2 {
+            match list[0] {
+                "Host" => {
+                    if current_host.is_valid() {
+                        config.hosts.push(current_host);
+                    }
+                    current_host = HostItem::new();
+                    current_host.name = list[1].to_string();
+                }
+                "hostname" => current_host.host = list[1].to_string(),
+                "user" => current_host.user = list[1].to_string(),
+                "port" => current_host.port = list[1].to_string(),
+                _ => {}
+            }
         }
-        if list.len() == 2 && list[0] == "hostname" {
-            current_host.host = String::from(&list[1]);
-        }
-        if list.len() == 2 && list[0] == "user" {
-            current_host.user = String::from(&list[1]);
-        }
-        if list.len() == 2 && list[0] == "port" {
-            current_host.port = String::from(&list[1]);
-        }
-        if current_host.is_valid() {
-            config.hosts.push(current_host.clone());
-            current_host.reset();
-        }
+    }
+
+    if current_host.is_valid() {
+        config.hosts.push(current_host);
     }
 
     config
