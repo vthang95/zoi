@@ -40,6 +40,21 @@ Options:
   -V, --version  Print version
 ```
 
+### Private key (IdentityFile)
+
+Attach a private key to a host so you can just `ssh <name>` instead of
+`ssh -i <key> <name>`:
+
+```bash
+zoi add zino-pg deploy@10.0.0.5:2222 --private-key ~/.ssh/id_me
+# or the ssh-style short flag
+zoi edit zino-pg deploy@10.0.0.5:2222 -i ~/.ssh/id_me
+```
+
+This writes an `identityfile` entry into `~/.ssh/config`, so `ssh zino-pg`
+picks up the key automatically. Omitting `--private-key` on `edit` keeps the
+existing key untouched.
+
 ## License
 This project is licensed under the [MIT license](license).
 

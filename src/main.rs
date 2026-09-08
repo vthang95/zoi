@@ -19,6 +19,9 @@ enum Commands {
         name: String,
         /// format: user@hostname:port
         value: String,
+        /// path to the private key (IdentityFile), e.g. ~/.ssh/id_me
+        #[arg(short = 'i', long = "private-key")]
+        private_key: Option<String>,
     },
     /// Delete a host
     Delete {
@@ -31,6 +34,9 @@ enum Commands {
         name: String,
         /// format: user@hostname:port
         value: String,
+        /// path to the private key (IdentityFile), e.g. ~/.ssh/id_me
+        #[arg(short = 'i', long = "private-key")]
+        private_key: Option<String>,
     },
     /// Rename a host
     Rename {
@@ -46,14 +52,14 @@ fn main() {
         Some(Commands::List {}) => {
             command::list_command()
         },
-        Some(Commands::Add { name, value }) => {
-            command::add_command(name, value)
+        Some(Commands::Add { name, value, private_key }) => {
+            command::add_command(name, value, private_key)
         },
         Some(Commands::DeleteAll {  }) => {
             command::delete_all_command()
         },
-        Some(Commands::Edit { name, value }) => {
-            command::edit_command(name, value)
+        Some(Commands::Edit { name, value, private_key }) => {
+            command::edit_command(name, value, private_key)
         },
         Some(Commands::Rename { name, new_name }) => {
             command::rename_command(name, new_name)
